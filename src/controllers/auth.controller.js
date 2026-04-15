@@ -1,6 +1,6 @@
-import bcrypt from 'bcryptjs';
-import { User } from '../models/user.model.js';
-import { signToken } from '../utils/jwt.js';
+import bcrypt from "bcryptjs";
+import { User } from "../models/user.model.js";
+import { signToken } from "../utils/jwt.js";
 
 /**
  * TODO: Register a new user
@@ -14,6 +14,27 @@ import { signToken } from '../utils/jwt.js';
 export async function register(req, res, next) {
   try {
     // Your code here
+    const { body } = req;
+    const { name, email, password } = body;
+
+    let user = await User.findOne({ email });
+    if (user) {
+      return res
+        .status(409)
+        .json({ error: { message: "Email already exists" } });
+    }
+
+    user = await User.create({
+      name,
+      email,
+      password,
+    });
+
+    const userObj = user.toObject();
+    delete userObj["password"];
+
+    return res.status(201).json({ user: userObj });
+    // return ApiResponse.created(res, "User created", { user });
   } catch (error) {
     next(error);
   }
@@ -33,6 +54,34 @@ export async function register(req, res, next) {
 export async function login(req, res, next) {
   try {
     // Your code here
+    const { body } = req;
+    const { email, password } = body;
+
+    const user = await User.findOne({ email }).select("+password");
+    if (!user) {
+      return res
+        .status(401)
+        .send({ error: { message: "Invalid credentials" } });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res
+        .status(401)
+        .send({ error: { message: "Invalid credentials" } });
+    }
+    const payload = {
+      userId: user._id,
+      email: user.email,
+      role: user.role,
+    };
+    const token = signToken(payload);
+
+    const userObj = user.toObject();
+    delete userObj.password;
+
+    return res.status(200).send({ user: userObj, token });
   } catch (error) {
     next(error);
   }
@@ -47,6 +96,8 @@ export async function login(req, res, next) {
 export async function me(req, res, next) {
   try {
     // Your code here
+    const user = req.user;
+    return res.status(200).json({ user });
   } catch (error) {
     next(error);
   }

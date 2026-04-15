@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
 
 /**
  * TODO: Signs a JWT token with the given payload
@@ -29,6 +29,9 @@ import jwt from 'jsonwebtoken';
  */
 export function signToken(payload) {
   // Your code here
+  const { JWT_SECRET, JWT_EXPIRES_IN } = process.env;
+  const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return token;
 }
 
 /**
@@ -67,4 +70,7 @@ export function signToken(payload) {
  */
 export function verifyToken(token) {
   // Your code here
+  const { JWT_SECRET } = process.env;
+  const decoded = jwt.verify(token, JWT_SECRET);
+  return decoded;
 }
